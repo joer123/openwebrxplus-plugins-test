@@ -40,6 +40,7 @@
     let all_spots_cache = [];
     let overlay_container = null;
     let current_scale = 1.0;
+    let blinked_spots = new Set(); // Track spots that have already blinked
 
     /**
      * Maps a frequency in kHz to an x-coordinate.
@@ -400,6 +401,27 @@
     }
 
     /**
+     * Triggers a 3-blink animation on a marker element.
+     * @param {HTMLElement} marker - The marker element to blink.
+     */
+    function blink_marker(marker) {
+        let blink_count = 0;
+        const max_blinks = 3;
+        const blink_interval = 150; // ms
+
+        const blink = () => {
+            if (blink_count >= max_blinks * 2) {
+                marker.style.opacity = '1';
+                return;
+            }
+            marker.style.opacity = marker.style.opacity === '0' ? '1' : '0';
+            blink_count++;
+            setTimeout(blink, blink_interval);
+        };
+        blink();
+    }
+
+    /**
      * Renders spots on the waterfall overlay.
      * @param {Array} spots - An array of spot objects.
      */
@@ -420,6 +442,14 @@
 
         const now = Date.now();
         const minTime = now - MAX_SPOT_AGE_MS;
+
+        // Clean up blinked_spots for old spots
+        blinked_spots.forEach(spotId => {
+            const [freq, time] = spotId.split('|');
+            if (parseInt(time) < minTime) {
+                blinked_spots.delete(spotId);
+            }
+        });
 
         const visible_spots = spots.filter(spot => {
             const timestampStr = spot.when || spot.timestamp;
@@ -468,7 +498,8 @@
 
             const timestampStr = spot.when || spot.timestamp;
             const spot_time = new Date(timestampStr).getTime();
-            const border_style = (now - spot_time < 6 * 60 * 1000) ? '2px solid #39FF14' : '1px solid #666'; // Green border for new spots
+            const is_new = (now - spot_time < 6 * 60 * 1000);
+            const border_style = is_new ? '2px solid #39FF14' : '1px solid #666'; // Green border for new spots
 
             // Center the marker on its x_pos.
             const final_transform = `translateX(-50%)`;
@@ -498,6 +529,15 @@
             level_end_x[current_level] = x_pos + (marker_width_estimate / 2);
 
             overlay_container.appendChild(marker);
+
+            // Trigger blink animation for new spots that haven't blinked yet
+            if (is_new) {
+                const spot_id = `${spot.frequency}|${spot_time}`;
+                if (!blinked_spots.has(spot_id)) {
+                    blinked_spots.add(spot_id);
+                    blink_marker(marker);
+                }
+            }
         });
     }
 
