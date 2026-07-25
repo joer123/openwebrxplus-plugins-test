@@ -15,7 +15,7 @@ permalink: /receiver/audio_filter
 
 ## Description
 
-The **Audio Filter Plugin** (`audio_filter.js`) is an extension for OpenWebRX+ aimed at improving audio quality across all modulation modes (SSB, AM, CW, FM, Digital). By using the Web Audio API, client-side filter chains (Highpass, Lowpass, Gain, Dynamics) are inserted into the signal path to minimize noise and increase speech intelligibility.
+The **Audio Filter Plugin** (`audio_filter.js`) is an extension for OpenWebRX+ aimed at improving audio quality across all modulation modes (SSB, AM, CW, FM, Digital). By using the Web Audio API, client-side ter chains (Highpass, Lowpass, Gain, Dynamics) are inserted into the signal path to minimize noise and increase speech intelligibility.
 
 **Note:** This plugin acts as a supplement to the excellent built-in NR (Noise Reduction) feature of OpenWebRX+.
 
@@ -51,9 +51,9 @@ Plugins.load('audio_filter')
 
 ## Usage
 
-A small **FIL** button is added to the bottom left of the receiver panel. Clicking this button opens a floating, draggable window containing the audio filter controls.
+A small **FI** button is added to the bottom left of the receiver panel. Clicking this button opens a floating, draggable window containing the audio filter controls.
 
-### FIL Button Status
+### FI Button Status
 * **Grey**: Filter window is closed and no filters are active.
 * **Green**: Filter window is open.
 * **Yellow**: Filter window is closed, but one or more filters (EQ, Notch, NB, Comp) are active.
