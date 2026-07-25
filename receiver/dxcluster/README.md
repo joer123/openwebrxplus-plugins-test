@@ -35,7 +35,16 @@ The plugin supports the following amateur radio bands (in kHz):
 ## Installation
 
 1. Copy the `dxcluster` folder to your OpenWebRX+ `receiver/` directory
-2. The plugin will be automatically loaded when OpenWebRX+ starts
+2. Add this line in your `init.js` file:
+
+```js
+// load remote
+Plugins.load('https://0xaf.github.io/openwebrxplus-plugins/receiver/dxcluster/dxcluster.js');
+// or local
+Plugins.load('dxcluster')
+```
+
+3. The plugin will be automatically loaded when OpenWebRX+ starts
 
 ## Usage
 
