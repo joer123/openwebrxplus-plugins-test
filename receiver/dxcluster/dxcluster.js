@@ -45,6 +45,31 @@
     let blinked_spots = new Set();
     let window_created = false;
     let plugin_button = null;
+    let data_started = false; // becomes true on first user interaction, guards the lazy fetch start
+    let fetch_interval_id = null;
+    let data_connected = false; // true once spots were fetched successfully, drives the button color like fdv's "connected"
+
+    // Lazy-start: only begin fetching spots once the user actually opens the
+    // panel/enables the overlay, so no background traffic happens unasked.
+    function ensure_data_loading() {
+        if (data_started) return;
+        data_started = true;
+        update_all_spots();
+        fetch_interval_id = setInterval(update_all_spots, FETCH_INTERVAL_MS);
+    }
+
+    // No point keeping the fetch interval running in the background if the overlay is off
+    // and the window (the only other thing using the data) just got closed.
+    function stop_data_loading() {
+        if (!data_started) return;
+        data_started = false;
+        data_connected = false;
+        if (fetch_interval_id) {
+            clearInterval(fetch_interval_id);
+            fetch_interval_id = null;
+        }
+        update_button_state();
+    }
 
     function freqToX(frequency) {
         if (!overlay_container || overlay_container.clientWidth <= 0) return -1;
@@ -54,14 +79,35 @@
         return (frequency - view_start_freq) / view_span * overlay_container.clientWidth;
     }
 
-    function init() {
-        const savedOverlay = localStorage.getItem('dxcluster_overlay_enabled');
-        if (savedOverlay !== null) {
-            overlay_enabled = (savedOverlay === 'true');
+    // Below 10 MHz LSB, above USB - matches standard ham band convention.
+    // UI.tuneBookmark() only sets the modulation; the actual low_cut/high_cut still
+    // comes from whatever was last saved in localStorage["bp-" + modulation] (see
+    // Demodulator.js), which can be a leftover from another mode/session. Without
+    // forcing the mode's own default bandpass, the sideband only catches up on the
+    // *next* click instead of the one that actually changed the mode.
+    function tune_to_spot(freqKHz, callsign) {
+        const freqHz = freqKHz * 1000;
+        const modulation = freqKHz < 10000 ? 'lsb' : 'usb';
+        if (typeof UI === 'undefined') return;
+        if (typeof UI.tuneBookmark === 'function') {
+            UI.tuneBookmark({ frequency: freqHz, modulation: modulation, name: callsign || '' });
         } else {
-            overlay_enabled = false; // Default to disabled
+            if (typeof UI.setModulation === 'function') UI.setModulation(modulation);
+            if (typeof UI.setFrequency === 'function') UI.setFrequency(freqHz);
         }
+        if (typeof Modes !== 'undefined' && typeof Modes.findByModulation === 'function' && typeof UI.getDemodulator === 'function') {
+            const modeObj = Modes.findByModulation(modulation);
+            const demod = UI.getDemodulator();
+            if (modeObj && modeObj.bandpass && demod && typeof demod.setBandpass === 'function') {
+                demod.setBandpass(modeObj.bandpass);
+            }
+        }
+    }
 
+    function init() {
+        // overlay_enabled is intentionally NOT persisted in localStorage: it must
+        // be actively turned on via the checkbox/button on every page load, but
+        // stays on for the rest of the session even if the window is closed.
         const savedFilter = localStorage.getItem('dxcluster_filter_visible_only');
         if (savedFilter !== null) {
             filter_visible_only = (savedFilter === 'true');
@@ -78,8 +124,7 @@
         }
 
         setInterval(main_loop, RENDER_INTERVAL_MS);
-        update_all_spots();
-        setInterval(update_all_spots, FETCH_INTERVAL_MS);
+        // Data fetching is started lazily, see ensure_data_loading()
 
         attempt_hook_openwebrx();
         update_button_state();
@@ -100,6 +145,7 @@
     }
 
     function on_plugin_button_click() {
+        ensure_data_loading();
         if (!window_created) {
             create_mini_window();
         }
@@ -173,6 +219,14 @@
                     winElem.style.height = '300px';
                 }
             }
+
+            if (typeof MutationObserver !== 'undefined') {
+                new MutationObserver(function() {
+                    if (winElem.style.display === 'none' && !overlay_enabled) {
+                        stop_data_loading();
+                    }
+                }).observe(winElem, { attributes: true, attributeFilter: ['style', 'class'] });
+            }
         }
 
         setTimeout(() => {
@@ -180,9 +234,9 @@
             if (chkOverlay) {
                 chkOverlay.addEventListener('change', (e) => {
                     overlay_enabled = e.target.checked;
-                    localStorage.setItem('dxcluster_overlay_enabled', overlay_enabled);
                     update_button_state();
                     if (overlay_enabled) {
+                        ensure_data_loading();
                         last_freq_khz = -1;
                         main_loop();
                     } else {
@@ -228,20 +282,6 @@
             }
 
             const tableBody = document.getElementById('dxcluster-table-body');
-            if (tableBody) {
-                tableBody.addEventListener('click', (e) => {
-                    const row = e.target.closest('tr[data-freq]');
-                    if (!row) return;
-                    const freq = parseFloat(row.dataset.freq);
-                    const call = row.dataset.call || '';
-                    if (freq && typeof UI !== 'undefined' && typeof UI.setFrequency === 'function') {
-                        UI.setFrequency(freq * 1000);
-                        if (typeof UI.showBubble === 'function' && call) {
-                            UI.showBubble(`${call} ➔ ${freq} kHz`);
-                        }
-                    }
-                });
-            }
 
             update_sort_indicators();
         }, 100);
@@ -274,8 +314,8 @@
             toggleBtn.style.cssText = 'position: absolute; bottom: 3px; left: 4px; z-index: 99; font-size: 12px; font-weight: bold; color: #aaa; cursor: pointer; background: rgba(0,0,0,0.5); padding: 0px 4px; border-radius: 3px; border: 1px solid #666; user-select: none; line-height: 12px; transition: left 0.2s;';
 
             toggleBtn.onclick = function() {
+                ensure_data_loading();
                 overlay_enabled = !overlay_enabled;
-                localStorage.setItem('dxcluster_overlay_enabled', overlay_enabled);
                 update_button_state();
                 if (overlay_enabled) {
                     if (all_spots_cache.length === 0) {
@@ -401,9 +441,9 @@
             const callColor = is_new ? '#39FF14' : '#fff';
 
             html += `
-                <tr data-freq="${spot.frequency}" data-call="${dx_call}" style="background: ${rowBg}; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='${rowBg}'" title="Click to tune to ${freq} kHz (${dx_call})">
+                <tr data-freq="${spot.frequency}" data-call="${dx_call}" style="background: ${rowBg}; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;">
                     <td style="padding: 3px 6px; color: #4dc3ff; font-weight: bold;">${freq}</td>
-                    <td style="padding: 3px 6px; color: ${callColor}; font-weight: bold; text-decoration: underline dotted;" title="Click to tune to ${dx_call}">${dx_call}</td>
+                    <td style="padding: 3px 6px; color: ${callColor}; font-weight: bold;">${dx_call}</td>
                     <td style="padding: 3px 6px; color: #aaa;">${de_call}</td>
                     <td style="padding: 3px 6px; color: #888; white-space: nowrap;">${timeStr}</td>
                     <td style="padding: 3px 6px; color: #ccc; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${comment}">${comment || '-'}</td>
@@ -514,6 +554,8 @@
 
             if (Array.isArray(spotsData)) {
                 all_spots_cache = spotsData;
+                data_connected = true;
+                update_button_state();
                 last_freq_khz = -1;
                 main_loop();
                 render_window_spots();
@@ -585,9 +627,7 @@
             }
             e.stopPropagation();
             const freq = parseFloat(marker.dataset.freq);
-            if (freq && typeof UI !== 'undefined' && typeof UI.setFrequency === 'function') {
-                UI.setFrequency(freq * 1000);
-            }
+            if (freq) tune_to_spot(freq, marker.textContent);
         });
 
         container.addEventListener('contextmenu', e => e.preventDefault());
@@ -771,6 +811,11 @@
     }
 
     function update_button_state() {
+        const btn = document.getElementById('plugin-button-' + PLUGIN_ID);
+        if (btn) {
+            btn.style.color = data_connected ? '#39FF14' : '#fff';
+        }
+
         const fallbackBtn = document.getElementById('dxcluster-toggle-btn');
         if (fallbackBtn) {
             if (overlay_enabled) {
