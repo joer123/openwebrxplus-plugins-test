@@ -1,11 +1,11 @@
 /**
  * dxcluster.js
- * 
+ *
  * An OpenWebRX+ plugin to display DX Cluster spots on the waterfall
  * and in an interactive floating mini-window.
  * Uses the new OpenWebRX ext-windows Plugin API (Plugins.addButton & Plugins.addWindow).
- * 
- * License: MIT 
+ *
+ * License: MIT
  * Copyright (c) 2026 dl1hqh
  */
 
@@ -58,8 +58,8 @@
         const savedOverlay = localStorage.getItem('dxcluster_overlay_enabled');
         if (savedOverlay !== null) {
             overlay_enabled = (savedOverlay === 'true');
-        } else {            
-            overlay_enabled = true; // Default to enabled
+        } else {
+            overlay_enabled = false; // Default to disabled
         }
 
         const savedFilter = localStorage.getItem('dxcluster_filter_visible_only');
@@ -272,7 +272,7 @@
             toggleBtn.textContent = 'DX';
             toggleBtn.title = 'Toggle DX-Cluster Overlay';
             toggleBtn.style.cssText = 'position: absolute; bottom: 3px; left: 4px; z-index: 99; font-size: 12px; font-weight: bold; color: #aaa; cursor: pointer; background: rgba(0,0,0,0.5); padding: 0px 4px; border-radius: 3px; border: 1px solid #666; user-select: none; line-height: 12px; transition: left 0.2s;';
-            
+
             toggleBtn.onclick = function() {
                 overlay_enabled = !overlay_enabled;
                 localStorage.setItem('dxcluster_overlay_enabled', overlay_enabled);
@@ -288,7 +288,7 @@
                     clear_spots();
                 }
             };
-            
+
             container.appendChild(toggleBtn);
 
             const dxc_update_pos = function() {
@@ -433,7 +433,7 @@
                 };
                 UI.viewChanged.is_dxcluster_hooked = true;
             }
-        } else if (hook_attempts < 20) { 
+        } else if (hook_attempts < 20) {
             hook_attempts++;
             setTimeout(attempt_hook_openwebrx, 500);
         }
@@ -472,7 +472,7 @@
 
     function main_loop() {
         if (document.hidden) return;
-        
+
         if (typeof UI.getScale === 'function') {
             current_scale = UI.getScale();
         }
@@ -690,7 +690,7 @@
             const spot_freq = parseFloat(spot.frequency);
             return spot_freq >= view_start_freq && spot_freq <= view_end_freq;
         });
-        
+
         visible_spots.sort((a, b) => parseFloat(a.frequency) - parseFloat(b.frequency));
 
         let level_end_x = [-1000, -1000, -1000];
