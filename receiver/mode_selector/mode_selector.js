@@ -293,6 +293,10 @@
             '.mode-selector-button-host {' +
             ' position: relative; z-index: 10002; display: flex; align-items: center;' +
             ' justify-content: center; height: 58px; width: 100%;' +
+            ' pointer-events: none;' +
+            ' }' +
+            '.mode-selector-button-host .mode-selector-trigger {' +
+            ' pointer-events: auto;' +
             ' }' +
             '.mode-selector-host {' +
             ' position: relative; min-height: 0;' +
