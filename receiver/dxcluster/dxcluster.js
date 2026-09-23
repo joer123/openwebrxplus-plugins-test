@@ -49,8 +49,7 @@
     let fetch_interval_id = null;
     let data_connected = false; // true once spots were fetched successfully, drives the button color like fdv's "connected"
 
-    // Lazy-start: only begin fetching spots once the user actually opens the
-    // panel/enables the overlay, so no background traffic happens unasked.
+
     function ensure_data_loading() {
         if (data_started) return;
         data_started = true;
@@ -58,8 +57,7 @@
         fetch_interval_id = setInterval(update_all_spots, FETCH_INTERVAL_MS);
     }
 
-    // No point keeping the fetch interval running in the background if the overlay is off
-    // and the window (the only other thing using the data) just got closed.
+
     function stop_data_loading() {
         if (!data_started) return;
         data_started = false;
@@ -79,12 +77,7 @@
         return (frequency - view_start_freq) / view_span * overlay_container.clientWidth;
     }
 
-    // Below 10 MHz LSB, above USB - matches standard ham band convention.
-    // UI.tuneBookmark() only sets the modulation; the actual low_cut/high_cut still
-    // comes from whatever was last saved in localStorage["bp-" + modulation] (see
-    // Demodulator.js), which can be a leftover from another mode/session. Without
-    // forcing the mode's own default bandpass, the sideband only catches up on the
-    // *next* click instead of the one that actually changed the mode.
+
     function tune_to_spot(freqKHz, callsign) {
         const freqHz = freqKHz * 1000;
         const modulation = freqKHz < 10000 ? 'lsb' : 'usb';
@@ -572,15 +565,23 @@
         let pressTimer = null;
         let startX = 0, startY = 0;
 
+        let touchStartMarker = null;
+        let movedTooFar = false;
+
         const get_marker = (e) => e.target.closest('.dxcluster-marker');
 
         const startPress = (e) => {
             const marker = get_marker(e);
             if (!marker) return;
 
+
+            e.stopPropagation();
+
             if (e.touches && e.touches.length === 1) {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
+                touchStartMarker = marker;
+                movedTooFar = false;
             }
             longPressTriggered = false;
             pressTimer = setTimeout(() => {
@@ -592,11 +593,31 @@
 
         const cancelPress = (e) => {
             if (pressTimer) clearTimeout(pressTimer);
+            if (e && e.type === 'mouseup' && get_marker(e)) e.stopPropagation();
             if (e && e.type === 'touchmove' && e.touches && e.touches.length === 1) {
                 if (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10) {
                     if (pressTimer) clearTimeout(pressTimer);
+                    movedTooFar = true;
                 }
             }
+        };
+
+        const onTouchEnd = (e) => {
+            cancelPress(e);
+            const existingHover = document.getElementById('dxcluster-spot-popup');
+            if (existingHover && existingHover.dataset.source === 'hover') existingHover.remove();
+
+            if (touchStartMarker) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!longPressTriggered && !movedTooFar) {
+                    const freq = parseFloat(touchStartMarker.dataset.freq);
+                    const name = touchStartMarker.textContent;
+                    if (freq) tune_to_spot(freq, name);
+                }
+            }
+            touchStartMarker = null;
+            movedTooFar = false;
         };
 
         container.addEventListener('mouseover', (e) => {
@@ -634,7 +655,7 @@
         container.addEventListener('mousedown', startPress);
         container.addEventListener('mouseup', cancelPress);
         container.addEventListener('touchstart', startPress, { passive: true });
-        container.addEventListener('touchend', cancelPress);
+        container.addEventListener('touchend', onTouchEnd);
         container.addEventListener('touchmove', cancelPress);
     }
 
