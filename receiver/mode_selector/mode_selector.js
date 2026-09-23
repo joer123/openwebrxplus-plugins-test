@@ -1,4 +1,4 @@
-// OpenWebRX+ plugin: small mode selector for analog modes.
+// OpenWebRX+ plugin: radial mode selector for analog modes.
 
 (function () {
     'use strict';
@@ -257,6 +257,9 @@
             ' display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));' +
             ' gap: 4px; margin-bottom: 4px; position: relative; z-index: 1;' +
             ' }' +
+            '.mode-selector-row:not(.mode-selector-special-row) {' +
+            ' top: -10px;' +
+            ' }' +
             '.mode-selector-item {' +
             ' width: 100%; min-width: 0; min-height: 30px; padding: 3px 2px;' +
             ' border-radius: 5px; cursor: pointer; font-size: 11px;' +
@@ -269,6 +272,9 @@
             ' }' +
             '.mode-selector-special-row {' +
             ' min-height: 48px; align-items: center;' +
+            ' }' +
+            '.mode-selector-special-row .mode-selector-item {' +
+            ' position: relative; top: -9px; height: 38px; min-height: 38px;' +
             ' }' +
             '.mode-selector-bottom-row {' +
             ' margin-bottom: 0;' +
@@ -286,7 +292,7 @@
             ' }' +
             '.mode-selector-button-host {' +
             ' position: relative; z-index: 10002; display: flex; align-items: center;' +
-            ' justify-content: center; height: 78px; width: 100%;' +
+            ' justify-content: center; height: 58px; width: 100%;' +
             ' }' +
             '.mode-selector-host {' +
             ' position: relative; min-height: 0;' +
@@ -374,7 +380,7 @@
     Plugins.mode_selector = {
         no_css: true,
         name: 'Mode Selector',
-        description: 'Select analog demodulation modes from one small button',
+        description: 'Select analog demodulation modes from one radial button',
         version: '1.0.0',
         init: function () {
             if (createUi()) return true;
