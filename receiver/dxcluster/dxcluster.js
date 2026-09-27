@@ -49,14 +49,12 @@
     let fetch_interval_id = null;
     let data_connected = false; // true once spots were fetched successfully, drives the button color like fdv's "connected"
 
-
     function ensure_data_loading() {
         if (data_started) return;
         data_started = true;
         update_all_spots();
         fetch_interval_id = setInterval(update_all_spots, FETCH_INTERVAL_MS);
     }
-
 
     function stop_data_loading() {
         if (!data_started) return;
@@ -76,7 +74,6 @@
         if (view_span <= 0) return -1;
         return (frequency - view_start_freq) / view_span * overlay_container.clientWidth;
     }
-
 
     function tune_to_spot(freqKHz, callsign) {
         const freqHz = freqKHz * 1000;
@@ -564,7 +561,6 @@
         let longPressTriggered = false;
         let pressTimer = null;
         let startX = 0, startY = 0;
-
         let touchStartMarker = null;
         let movedTooFar = false;
 
@@ -573,7 +569,6 @@
         const startPress = (e) => {
             const marker = get_marker(e);
             if (!marker) return;
-
 
             e.stopPropagation();
 
