@@ -45,9 +45,9 @@
     let blinked_spots = new Set();
     let window_created = false;
     let plugin_button = null;
-    let data_started = false; // becomes true on first user interaction, guards the lazy fetch start
+    let data_started = false;
     let fetch_interval_id = null;
-    let data_connected = false; // true once spots were fetched successfully, drives the button color like fdv's "connected"
+    let data_connected = false;
 
     function ensure_data_loading() {
         if (data_started) return;
@@ -75,6 +75,7 @@
         return (frequency - view_start_freq) / view_span * overlay_container.clientWidth;
     }
 
+
     function tune_to_spot(freqKHz, callsign) {
         const freqHz = freqKHz * 1000;
         const modulation = freqKHz < 10000 ? 'lsb' : 'usb';
@@ -95,9 +96,6 @@
     }
 
     function init() {
-        // overlay_enabled is intentionally NOT persisted in localStorage: it must
-        // be actively turned on via the checkbox/button on every page load, but
-        // stays on for the rest of the session even if the window is closed.
         const savedFilter = localStorage.getItem('dxcluster_filter_visible_only');
         if (savedFilter !== null) {
             filter_visible_only = (savedFilter === 'true');
@@ -114,8 +112,6 @@
         }
 
         setInterval(main_loop, RENDER_INTERVAL_MS);
-        // Data fetching is started lazily, see ensure_data_loading()
-
         attempt_hook_openwebrx();
         update_button_state();
     }
@@ -150,8 +146,8 @@
         render_window_spots();
     }
 
-    let sort_by = 'time'; // 'time', 'freq', 'dx', 'de'
-    let sort_dir = 'desc'; // 'desc' = newest first for time
+    let sort_by = 'time';
+    let sort_dir = 'desc';
 
     function create_mini_window() {
         if (window_created) return;
