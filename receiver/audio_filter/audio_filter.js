@@ -165,6 +165,7 @@
     let is_loudness_enabled = false;
     let show_input_spectrum = localStorage.getItem('openwebrx-audio-filter-show-in-spec') !== 'false';
     let show_output_spectrum = localStorage.getItem('openwebrx-audio-filter-show-out-spec') !== 'false';
+    let is_initialized = false;
 
     const SETTING_KEYS = [
         'highpassFreq', 'lowpassFreq', 'peakingGain', 'peakingFreq', 'peakingQ', 'gain',
@@ -1050,6 +1051,8 @@
     }
 
     function initAudioFilter() {
+        if (is_initialized) return;
+
         try {
             if (localStorage.getItem('openwebrx-audio-filter-enabled') === 'true') is_filter_enabled = true;
             if (localStorage.getItem('openwebrx-audio-filter-nr') === 'true') is_nr_enabled = true;
@@ -1094,7 +1097,10 @@
             setInterval(check_modulation_loop, 500);
             setInterval(process_audio_analysis, 50); // Polling for AutoNotch
 
-
+            is_initialized = true;
+            if (typeof Plugins !== 'undefined' && Plugins.audio_filter) {
+                Plugins.audio_filter.is_initialized = true;
+            }
         } catch (e) {
             console.error(`[${PLUGIN_ID}] Error during initialization:`, e);
         }
@@ -2127,13 +2133,11 @@
         toggle: on_plugin_button_click
     };
 
-    if (typeof Plugins !== 'undefined') {
-        Plugins.audio_filter = {
-            no_css: true,
-            init: function() {
-                initAudioFilter();
-                return true;
-            }
+    if (typeof Plugins !== 'undefined' && Plugins.audio_filter) {
+        Plugins.audio_filter.no_css = true;
+        Plugins.audio_filter.init = function() {
+            initAudioFilter();
+            return true;
         };
     }
 
