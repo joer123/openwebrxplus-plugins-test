@@ -381,18 +381,16 @@
         return true;
     }
 
-    Plugins.mode_selector = {
-        no_css: true,
-        name: 'Mode Selector',
-        description: 'Select analog demodulation modes from one radial button',
-        version: '1.0.0',
-        init: function () {
-            if (createUi()) return true;
-            var attempts = 0;
-            var retry = setInterval(function () {
-                if (createUi() || ++attempts >= 40) clearInterval(retry);
-            }, 250);
-            return true;
-        }
+    Plugins.mode_selector.no_css = true;
+    Plugins.mode_selector.name = 'Mode Selector';
+    Plugins.mode_selector.description = 'Select analog demodulation modes from one radial button';
+    Plugins.mode_selector.version = '1.0.0';
+    Plugins.mode_selector.init = function () {
+        if (createUi()) return true;
+        var attempts = 0;
+        var retry = setInterval(function () {
+            if (createUi() || ++attempts >= 40) clearInterval(retry);
+        }, 250);
+        return true;
     };
 })();
