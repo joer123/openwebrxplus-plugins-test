@@ -48,6 +48,7 @@
     let data_started = false;
     let fetch_interval_id = null;
     let data_connected = false;
+    let is_initialized = false;
 
     function ensure_data_loading() {
         if (data_started) return;
@@ -75,7 +76,6 @@
         return (frequency - view_start_freq) / view_span * overlay_container.clientWidth;
     }
 
-
     function tune_to_spot(freqKHz, callsign) {
         const freqHz = freqKHz * 1000;
         const modulation = freqKHz < 10000 ? 'lsb' : 'usb';
@@ -96,6 +96,8 @@
     }
 
     function init() {
+        if (is_initialized) return;
+
         const savedFilter = localStorage.getItem('dxcluster_filter_visible_only');
         if (savedFilter !== null) {
             filter_visible_only = (savedFilter === 'true');
@@ -112,8 +114,14 @@
         }
 
         setInterval(main_loop, RENDER_INTERVAL_MS);
+
         attempt_hook_openwebrx();
         update_button_state();
+
+        is_initialized = true;
+        if (typeof Plugins !== 'undefined' && Plugins.dxcluster) {
+            Plugins.dxcluster.is_initialized = true;
+        }
     }
 
     function create_ui() {
@@ -146,8 +154,8 @@
         render_window_spots();
     }
 
-    let sort_by = 'time';
-    let sort_dir = 'desc';
+    let sort_by = 'time'; // 'time', 'freq', 'dx', 'de'
+    let sort_dir = 'desc'; // 'desc' = newest first for time
 
     function create_mini_window() {
         if (window_created) return;
@@ -851,13 +859,12 @@
         toggle: on_plugin_button_click
     };
 
-    if (typeof Plugins !== 'undefined') {
-        Plugins.dxcluster = {
-            no_css: true,
-            init: function() {
-                init();
-                return true;
-            }
+    if (typeof Plugins !== 'undefined' && Plugins.dxcluster) {
+        Plugins.dxcluster.no_css = true;
+        Plugins.dxcluster._version = 1.0;
+        Plugins.dxcluster.init = function() {
+            init();
+            return true;
         };
     }
 
