@@ -23,6 +23,10 @@ After the receiver mode controls have loaded, the plugin adds a **MODE** button 
 
 The selector is built from the analog modes provided by OpenWebRX+ and only shows modes that are available in the current receiver interface. The menu is arranged in a compact grid. LSB and USB are placed around the center of the selector when available, while HDR and other available modes are added to the remaining rows.
 
+### Frequency Tune Buttons
+
+To the left and right of the **MODE** button, the plugin adds two triangular groups of step-tune buttons (one large step on top, two smaller steps side by side below it, mirrored between the left and right side). Clicking a button nudges the receive frequency down (left) or up (right) by its step and rounds to the nearest multiple of that step. The default steps are 10kHz/1kHz/500Hz; see Configuration below to change them.
+
 ### Mode Selector Button
 
 * **MODE**: Opens the mode selector when no known mode is currently active.
@@ -45,20 +49,15 @@ Digital mode controls are not the focus of this plugin. If OpenWebRX+ exposes a 
 * A small synchronization loop restores the selector placement if OpenWebRX+ rebuilds the receiver panel.
 * The plugin injects its own layout styles and does not require a separate CSS file.
 
-## Requirements and Compatibility
-
-The plugin requires an OpenWebRX+ version that provides:
-
-* `Plugins` for plugin registration and loading.
-* `Modes.getModes()` for the available analog mode definitions.
-* `UI.getModulation()` and `UI.setModulation()` for reading and changing the current mode.
-* The standard receiver mode panel: `#openwebrx-panel-receiver .openwebrx-modes`.
-
-If the mode panel or mode definitions are not available, the plugin retries initialization for a short time and leaves the original receiver controls unchanged if initialization cannot complete.
-
 ## Configuration
 
-No manual configuration in `init.js` is required. The selector uses the mode definitions and receiver controls supplied by the active OpenWebRX+ profile.
+The tune button steps can be preset in `init.js`, before the plugin loads:
+
+```js
+Plugins.mode_selector_steps = [12500, 5000, 1000]; // 12.5kHz, 5kHz, 1kHz
+```
+
+Order is largest to smallest. If not set, the steps default to `[10000, 1000, 500]`. No other manual configuration is required - the selector otherwise uses the mode definitions and receiver controls supplied by the active OpenWebRX+ profile.
 
 ## License
 
